@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VetSystem - Sistema de Gestión Veterinaria</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, sans-serif; background: #f0f2f5; color: #1a1a1a; font-size: 14px; }
+  .app { display: flex; min-height: 100vh; }
+
+  /* SIDEBAR */
+  .sidebar { width: 210px; background: #1e3a5f; color: #fff; display: flex; flex-direction: column; flex-shrink: 0; }
+  .sidebar-logo { padding: 1.25rem 1rem; border-bottom: 1px solid rgba(255,255,255,0.1); }
+  .sidebar-logo h2 { font-size: 16px; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 8px; }
+  .sidebar-logo p { font-size: 11px; color: rgba(255,255,255,0.55); margin-top: 2px; }
+  .nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 1rem; font-size: 13px; color: rgba(255,255,255,0.7); cursor: pointer; border-left: 3px solid transparent; transition: all 0.15s; }
+  .nav-item:hover { background: rgba(255,255,255,0.08); color: #fff; }
+  .nav-item.active { background: rgba(255,255,255,0.13); color: #fff; border-left-color: #4da6ff; }
+  .nav-icon { font-size: 18px; width: 22px; text-align: center; }
+
+  /* MAIN */
+  .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+  .topbar { background: #fff; border-bottom: 1px solid #e0e4ea; padding: 0.75rem 1.5rem; display: flex; align-items: center; justify-content: space-between; }
+  .topbar h1 { font-size: 17px; font-weight: 600; color: #1e3a5f; }
+  .user-info { display: flex; align-items: center; gap: 10px; font-size: 13px; color: #666; }
+  .avatar { width: 34px; height: 34px; border-radius: 50%; background: #1e3a5f; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; }
+  .content { flex: 1; padding: 1.5rem; overflow-y: auto; }
+
+  /* SECTIONS */
+  .section { display: none; }
+  .section.active { display: block; }
+
+  /* STATS */
+  .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 1.5rem; }
+  .stat-card { background: #fff; border-radius: 10px; padding: 1.1rem 1.25rem; border: 1px solid #e0e4ea; }
+  .stat-icon { font-size: 22px; margin-bottom: 6px; }
+  .stat-label { font-size: 11px; color: #888; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; }
+  .stat-value { font-size: 26px; font-weight: 700; color: #1e3a5f; margin: 2px 0; }
+  .stat-sub { font-size: 11px; color: #aaa; }
+
+  /* CARDS */
+  .card { background: #fff; border-radius: 10px; border: 1px solid #e0e4ea; overflow: hidden; margin-bottom: 1.25rem; }
+  .card-header { padding: 0.875rem 1.25rem; border-bottom: 1px solid #e0e4ea; display: flex; align-items: center; justify-content: space-between; }
+  .card-title { font-size: 14px; font-weight: 600; color: #1e3a5f; }
+
+  /* BUTTONS */
+  .btn { padding: 7px 14px; font-size: 12px; font-weight: 500; border-radius: 7px; cursor: pointer; border: 1px solid #d0d5dd; background: #fff; color: #333; display: inline-flex; align-items: center; gap: 6px; transition: all 0.15s; }
+  .btn:hover { background: #f5f7fa; }
+  .btn-primary { background: #1e3a5f; color: #fff; border-color: #1e3a5f; }
+  .btn-primary:hover { background: #16304f; }
+  .btn-sm { padding: 4px 10px; font-size: 11px; }
+  .btn-danger { background: #fff0f0; color: #cc2222; border-color: #ffcccc; }
+  .btn-danger:hover { background: #ffe0e0; }
+  .btn-edit { background: #f0f4ff; color: #2255cc; border-color: #ccd5ff; }
+  .btn-edit:hover { background: #e0e8ff; }
+
+  /* SEARCH */
+  .search-bar { padding: 0.75rem 1.25rem; border-bottom: 1px solid #e0e4ea; display: flex; gap: 10px; }
+  .search-input { flex: 1; padding: 7px 12px; font-size: 13px; border-radius: 7px; border: 1px solid #d0d5dd; background: #f9fafb; color: #333; outline: none; }
+  .search-input:focus { border-color: #1e3a5f; background: #fff; }
+
+  /* TABLE */
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { padding: 9px 1rem; text-align: left; font-size: 11px; font-weight: 600; color: #777; background: #f9fafb; border-bottom: 1px solid #e0e4ea; text-transform: uppercase; letter-spacing: 0.4px; }
+  td { padding: 9px 1rem; border-bottom: 1px solid #f0f2f5; color: #333; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #f9fafb; }
+
+  /* BADGES */
+  .badge { display: inline-block; padding: 3px 9px; border-radius: 99px; font-size: 11px; font-weight: 600; }
+  .badge-success { background: #e6f9ee; color: #1a7a3c; }
+  .badge-warning { background: #fff8e0; color: #8a6200; }
+  .badge-danger  { background: #fff0f0; color: #cc2222; }
+  .badge-info    { background: #e8f0ff; color: #1e3a9f; }
+  .badge-gray    { background: #f0f0f0; color: #555; }
+
+  /* MODAL */
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 200; align-items: center; justify-content: center; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: #fff; border-radius: 12px; width: 460px; max-width: 95vw; box-shadow: 0 8px 32px rgba(0,0,0,0.18); }
+  .modal-header { padding: 1rem 1.25rem; border-bottom: 1px solid #e0e4ea; display: flex; align-items: center; justify-content: space-between; }
+  .modal-header h3 { font-size: 15px; font-weight: 600; color: #1e3a5f; }
+  .modal-body { padding: 1.25rem; max-height: 65vh; overflow-y: auto; }
+  .modal-footer { padding: 0.875rem 1.25rem; border-top: 1px solid #e0e4ea; display: flex; justify-content: flex-end; gap: 8px; }
+
+  /* FORM */
+  .form-group { margin-bottom: 0.9rem; }
+  .form-label { font-size: 12px; font-weight: 600; color: #555; margin-bottom: 5px; display: block; }
+  .form-input { width: 100%; padding: 8px 11px; font-size: 13px; border-radius: 7px; border: 1px solid #d0d5dd; color: #333; outline: none; background: #fff; }
+  .form-input:focus { border-color: #1e3a5f; box-shadow: 0 0 0 3px rgba(30,58,95,0.08); }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  /* DASHBOARD EXTRAS */
+  .dash-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .cita-row { display: flex; align-items: center; justify-content: space-between; padding: 8px 1.25rem; border-bottom: 1px solid #f0f2f5; font-size: 13px; }
+  .cita-row:last-child { border-bottom: none; }
+  .empty-state { padding: 2rem; text-align: center; color: #aaa; font-size: 13px; }
+
+  /* CHART */
+  .chart-wrap { padding: 1rem 1.25rem 0.5rem; }
+  .chart-bars { display: flex; align-items: flex-end; gap: 10px; height: 90px; }
+  .bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .bar { width: 100%; border-radius: 4px 4px 0 0; background: #4da6ff; min-height: 4px; }
+  .bar-lbl { font-size: 10px; color: #888; }
+  .bar-val { font-size: 10px; color: #1e3a5f; font-weight: 600; }
+
+  /* ACTION BTNS */
+  .action-btns { display: flex; gap: 5px; }
+
+  /* CONFIRM MODAL */
+  .confirm-msg { font-size: 13px; color: #555; line-height: 1.6; }
+
+  @media (max-width: 700px) {
+    .stats-grid { grid-template-columns: 1fr 1fr; }
+    .dash-grid { grid-template-columns: 1fr; }
+    .sidebar { width: 56px; }
+    .nav-item span { display: none; }
+    .sidebar-logo p, .sidebar-logo h2 span { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sidebar-logo">
+      <h2>🐾 <span>VetSystem</span></h2>
+      <p>Clínica Veterinaria</p>
+    </div>
+    <div class="nav-item active" onclick="showSection('dashboard',this)">
+      <span class="nav-icon">📊</span><span>Dashboard</span>
+    </div>
+    <div class="nav-item" onclick="showSection('pacientes',this)">
+      <span class="nav-icon">🐶</span><span>Pacientes</span>
+    </div>
+    <div class="nav-item" onclick="showSection('propietarios',this)">
+      <span class="nav-icon">👥</span><span>Propietarios</span>
+    </div>
+    <div class="nav-item" onclick="showSection('citas',this)">
+      <span class="nav-icon">📅</span><span>Citas</span>
+    </div>
+    <div class="nav-item" onclick="showSection('historial',this)">
+      <span class="nav-icon">📋</span><span>Historial</span>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="topbar">
+      <h1 id="page-title">Dashboard</h1>
+      <div class="user-info">
+        <span>Dr. Administrador</span>
+        <div class="avatar">DA</div>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- DASHBOARD -->
+      <div class="section active" id="sec-dashboard">
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon">🐾</div>
+            <div class="stat-label">Total pacientes</div>
+            <div class="stat-value" id="stat-pac">0</div>
+            <div class="stat-sub">Animales registrados</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">👥</div>
+            <div class="stat-label">Propietarios</div>
+            <div class="stat-value" id="stat-prop">0</div>
+            <div class="stat-sub">Clientes activos</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">📅</div>
+            <div class="stat-label">Citas hoy</div>
+            <div class="stat-value" id="stat-hoy">0</div>
+            <div class="stat-sub">Programadas para hoy</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">✅</div>
+            <div class="stat-label">Total citas</div>
+            <div class="stat-value" id="stat-cit">0</div>
+            <div class="stat-sub">Registradas</div>
+          </div>
+        </div>
+        <div class="dash-grid">
+          <div class="card">
+            <div class="card-header"><span class="card-title">Citas recientes</span></div>
+            <div id="dash-citas-list"></div>
+          </div>
+          <div class="card">
+            <div class="card-header"><span class="card-title">Pacientes por especie</span></div>
+            <div class="chart-wrap"><div class="chart-bars" id="chart-especie"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PACIENTES -->
+      <div class="section" id="sec-pacientes">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Pacientes registrados</span>
+            <button class="btn btn-primary" onclick="openModal('modal-pac')">+ Nuevo paciente</button>
+          </div>
+          <div class="search-bar">
+            <input class="search-input" placeholder="Buscar por nombre, especie o raza..." oninput="filtrar(this.value,'tab-pac',['nombre','especie','raza'])">
+          </div>
+          <table id="tab-pac">
+            <thead><tr><th>Nombre</th><th>Especie</th><th>Raza</th><th>Edad</th><th>Propietario</th><th>Estado</th><th>Acciones</th></tr></thead>
+            <tbody id="body-pac"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- PROPIETARIOS -->
+      <div class="section" id="sec-propietarios">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Propietarios registrados</span>
+            <button class="btn btn-primary" onclick="openModal('modal-prop')">+ Nuevo propietario</button>
+          </div>
+          <div class="search-bar">
+            <input class="search-input" placeholder="Buscar por nombre, email o teléfono..." oninput="filtrar(this.value,'tab-prop',['nombre','email','tel'])">
+          </div>
+          <table id="tab-prop">
+            <thead><tr><th>Nombre</th><th>Email</th><th>Teléfono</th><th>Dirección</th><th>Mascotas</th><th>Acciones</th></tr></thead>
+            <tbody id="body-prop"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- CITAS -->
+      <div class="section" id="sec-citas">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Gestión de citas</span>
+            <button class="btn btn-primary" onclick="openModal('modal-cit')">+ Nueva cita</button>
+          </div>
+          <div class="search-bar">
+            <input class="search-input" placeholder="Buscar por paciente, motivo o veterinario..." oninput="filtrar(this.value,'tab-cit',['paciente','motivo','vet'])">
+          </div>
+          <table id="tab-cit">
+            <thead><tr><th>Paciente</th><th>Fecha</th><th>Hora</th><th>Motivo</th><th>Veterinario</th><th>Estado</th><th>Acciones</th></tr></thead>
+            <tbody id="body-cit"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- HISTORIAL -->
+      <div class="section" id="sec-historial">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Historial clínico</span>
+            <button class="btn btn-primary" onclick="openModal('modal-hist')">+ Nuevo registro</button>
+          </div>
+          <div class="search-bar">
+            <input class="search-input" placeholder="Buscar por paciente o diagnóstico..." oninput="filtrar(this.value,'tab-hist',['paciente','diag','trat'])">
+          </div>
+          <table id="tab-hist">
+            <thead><tr><th>Paciente</th><th>Fecha</th><th>Diagnóstico</th><th>Tratamiento</th><th>Veterinario</th><th>Acciones</th></tr></thead>
+            <tbody id="body-hist"></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div><!-- /content -->
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<!-- MODAL PACIENTE -->
+<div class="modal-overlay" id="modal-pac">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="tit-pac">Nuevo paciente</h3>
+      <button class="btn btn-sm" onclick="closeModal('modal-pac')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="pac-id">
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Nombre *</label><input class="form-input" id="pac-nombre" placeholder="Nombre del animal"></div>
+        <div class="form-group"><label class="form-label">Especie *</label>
+          <select class="form-input" id="pac-especie">
+            <option value="">Seleccionar...</option>
+            <option>Perro</option><option>Gato</option><option>Conejo</option><option>Ave</option><option>Reptil</option><option>Otro</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Raza</label><input class="form-input" id="pac-raza" placeholder="Raza"></div>
+        <div class="form-group"><label class="form-label">Edad (años)</label><input class="form-input" type="number" id="pac-edad" min="0" step="0.5" placeholder="0"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Sexo</label>
+          <select class="form-input" id="pac-sexo"><option>Macho</option><option>Hembra</option></select>
+        </div>
+        <div class="form-group"><label class="form-label">Peso (kg)</label><input class="form-input" type="number" id="pac-peso" step="0.1" placeholder="0.0"></div>
+      </div>
+      <div class="form-group"><label class="form-label">Propietario *</label>
+        <select class="form-input" id="pac-prop"><option value="">Seleccionar propietario...</option></select>
+      </div>
+      <div class="form-group"><label class="form-label">Estado</label>
+        <select class="form-input" id="pac-estado"><option>Activo</option><option>En tratamiento</option><option>Alta médica</option></select>
+      </div>
+      <div class="form-group"><label class="form-label">Notas</label>
+        <textarea class="form-input" id="pac-notas" rows="2" placeholder="Observaciones..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('modal-pac')">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarPac()">Guardar paciente</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL PROPIETARIO -->
+<div class="modal-overlay" id="modal-prop">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="tit-prop">Nuevo propietario</h3>
+      <button class="btn btn-sm" onclick="closeModal('modal-prop')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="prop-id">
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Nombre completo *</label><input class="form-input" id="prop-nombre" placeholder="Nombre y apellido"></div>
+        <div class="form-group"><label class="form-label">Teléfono *</label><input class="form-input" id="prop-tel" placeholder="300 000 0000"></div>
+      </div>
+      <div class="form-group"><label class="form-label">Email</label><input class="form-input" type="email" id="prop-email" placeholder="correo@ejemplo.com"></div>
+      <div class="form-group"><label class="form-label">Dirección</label><input class="form-input" id="prop-dir" placeholder="Dirección de residencia"></div>
+      <div class="form-group"><label class="form-label">Documento de identidad</label><input class="form-input" id="prop-doc" placeholder="Cédula o documento"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('modal-prop')">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarProp()">Guardar propietario</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CITA -->
+<div class="modal-overlay" id="modal-cit">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="tit-cit">Nueva cita</h3>
+      <button class="btn btn-sm" onclick="closeModal('modal-cit')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="cit-id">
+      <div class="form-group"><label class="form-label">Paciente *</label>
+        <select class="form-input" id="cit-pac"><option value="">Seleccionar paciente...</option></select>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Fecha *</label><input class="form-input" type="date" id="cit-fecha"></div>
+        <div class="form-group"><label class="form-label">Hora *</label><input class="form-input" type="time" id="cit-hora"></div>
+      </div>
+      <div class="form-group"><label class="form-label">Motivo de consulta *</label>
+        <input class="form-input" id="cit-motivo" placeholder="Ej: Vacunación anual, revisión general...">
+      </div>
+      <div class="form-group"><label class="form-label">Veterinario responsable</label>
+        <input class="form-input" id="cit-vet" placeholder="Nombre del veterinario" value="Dr. García">
+      </div>
+      <div class="form-group"><label class="form-label">Estado</label>
+        <select class="form-input" id="cit-estado"><option>Pendiente</option><option>Confirmada</option><option>Completada</option><option>Cancelada</option></select>
+      </div>
+      <div class="form-group"><label class="form-label">Notas adicionales</label>
+        <textarea class="form-input" id="cit-notas" rows="2" placeholder="Observaciones..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('modal-cit')">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarCit()">Guardar cita</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL HISTORIAL -->
+<div class="modal-overlay" id="modal-hist">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="tit-hist">Nuevo registro clínico</h3>
+      <button class="btn btn-sm" onclick="closeModal('modal-hist')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="hist-id">
+      <div class="form-group"><label class="form-label">Paciente *</label>
+        <select class="form-input" id="hist-pac"><option value="">Seleccionar paciente...</option></select>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Fecha *</label><input class="form-input" type="date" id="hist-fecha"></div>
+        <div class="form-group"><label class="form-label">Veterinario</label><input class="form-input" id="hist-vet" value="Dr. García"></div>
+      </div>
+      <div class="form-group"><label class="form-label">Diagnóstico *</label>
+        <input class="form-input" id="hist-diag" placeholder="Diagnóstico clínico">
+      </div>
+      <div class="form-group"><label class="form-label">Tratamiento</label>
+        <textarea class="form-input" id="hist-trat" rows="2" placeholder="Medicamentos y procedimientos..."></textarea>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Peso registrado (kg)</label><input class="form-input" type="number" id="hist-peso" step="0.1" placeholder="0.0"></div>
+        <div class="form-group"><label class="form-label">Temperatura (°C)</label><input class="form-input" type="number" id="hist-temp" step="0.1" placeholder="38.5"></div>
+      </div>
+      <div class="form-group"><label class="form-label">Observaciones</label>
+        <textarea class="form-input" id="hist-obs" rows="2" placeholder="Observaciones adicionales..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('modal-hist')">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarHist()">Guardar registro</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CONFIRMACION -->
+<div class="modal-overlay" id="modal-confirm">
+  <div class="modal" style="width:340px;">
+    <div class="modal-header"><h3>Confirmar eliminación</h3></div>
+    <div class="modal-body">
+      <p class="confirm-msg">¿Estás seguro de que deseas eliminar este registro? Esta acción no se puede deshacer.</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('modal-confirm')">Cancelar</button>
+      <button class="btn btn-danger" id="btn-del-ok">Sí, eliminar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── BASE DE DATOS EN MEMORIA ───────────────────────────────────────────
+const db = { propietarios: [], pacientes: [], citas: [], historial: [] };
+let _uid = 1;
+const uid = () => 'id_' + (_uid++);
+
+// ─── NAVEGACIÓN ─────────────────────────────────────────────────────────
+function showSection(id, el) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('sec-' + id).classList.add('active');
+  el.classList.add('active');
+  const t = { dashboard:'Dashboard', pacientes:'Pacientes', propietarios:'Propietarios', citas:'Citas', historial:'Historial clínico' };
+  document.getElementById('page-title').textContent = t[id];
+  if (id === 'dashboard') renderDash();
+}
+
+// ─── MODALES ─────────────────────────────────────────────────────────────
+function openModal(id) {
+  if (id === 'modal-pac')  fillSel('pac-prop', db.propietarios, 'Seleccionar propietario...');
+  if (id === 'modal-cit')  fillSel('cit-pac',  db.pacientes,    'Seleccionar paciente...');
+  if (id === 'modal-hist') fillSel('hist-pac', db.pacientes,    'Seleccionar paciente...');
+  document.getElementById(id).classList.add('open');
+}
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+  if (id === 'modal-pac')  { resetForm(['pac-id','pac-nombre','pac-raza','pac-edad','pac-peso','pac-notas']); document.getElementById('pac-especie').value=''; document.getElementById('pac-prop').value=''; document.getElementById('pac-estado').value='Activo'; document.getElementById('tit-pac').textContent='Nuevo paciente'; }
+  if (id === 'modal-prop') { resetForm(['prop-id','prop-nombre','prop-tel','prop-email','prop-dir','prop-doc']); document.getElementById('tit-prop').textContent='Nuevo propietario'; }
+  if (id === 'modal-cit')  { resetForm(['cit-id','cit-pac','cit-fecha','cit-hora','cit-motivo','cit-notas']); document.getElementById('cit-vet').value='Dr. García'; document.getElementById('cit-estado').value='Pendiente'; document.getElementById('tit-cit').textContent='Nueva cita'; }
+  if (id === 'modal-hist') { resetForm(['hist-id','hist-pac','hist-fecha','hist-diag','hist-trat','hist-peso','hist-temp','hist-obs']); document.getElementById('hist-vet').value='Dr. García'; document.getElementById('tit-hist').textContent='Nuevo registro clínico'; }
+}
+function resetForm(ids) { ids.forEach(id => { let el = document.getElementById(id); if(el) el.value=''; }); }
+function fillSel(selId, arr, placeholder) {
+  let sel = document.getElementById(selId);
+  let cur = sel.value;
+  sel.innerHTML = '<option value="">' + placeholder + '</option>';
+  arr.forEach(x => { let o = document.createElement('option'); o.value = x.id; o.textContent = x.nombre; sel.appendChild(o); });
+  if (cur) sel.value = cur;
+}
+
+// ─── CRUD PROPIETARIOS ───────────────────────────────────────────────────
+function guardarProp() {
+  let nombre = document.getElementById('prop-nombre').value.trim();
+  let tel    = document.getElementById('prop-tel').value.trim();
+  if (!nombre || !tel) { alert('Nombre y teléfono son obligatorios.'); return; }
+  let eid = document.getElementById('prop-id').value;
+  let data = { nombre, tel, email: document.getElementById('prop-email').value, dir: document.getElementById('prop-dir').value, doc: document.getElementById('prop-doc').value };
+  if (eid) { let i = db.propietarios.findIndex(x=>x.id===eid); if(i>=0) db.propietarios[i] = {...db.propietarios[i],...data}; }
+  else db.propietarios.push({ id: uid(), ...data });
+  closeModal('modal-prop'); renderProp(); renderDash();
+}
+function editProp(id) {
+  let p = db.propietarios.find(x=>x.id===id); if(!p) return;
+  document.getElementById('prop-id').value    = p.id;
+  document.getElementById('prop-nombre').value = p.nombre;
+  document.getElementById('prop-tel').value   = p.tel;
+  document.getElementById('prop-email').value  = p.email||'';
+  document.getElementById('prop-dir').value    = p.dir||'';
+  document.getElementById('prop-doc').value    = p.doc||'';
+  document.getElementById('tit-prop').textContent = 'Editar propietario';
+  openModal('modal-prop');
+}
+function delProp(id) { confirmDel(()=>{ db.propietarios = db.propietarios.filter(x=>x.id!==id); renderProp(); renderDash(); }); }
+function renderProp() {
+  let tbody = document.getElementById('body-prop');
+  if (!db.propietarios.length) { tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state">No hay propietarios registrados</div></td></tr>'; return; }
+  tbody.innerHTML = db.propietarios.map(p => {
+    let mascotas = db.pacientes.filter(m=>m.propId===p.id).length;
+    return `<tr data-nombre="${p.nombre}" data-email="${p.email||''}" data-tel="${p.tel}">
+      <td><strong>${p.nombre}</strong></td><td>${p.email||'—'}</td><td>${p.tel}</td><td>${p.dir||'—'}</td>
+      <td><span class="badge badge-info">${mascotas} mascota${mascotas!==1?'s':''}</span></td>
+      <td><div class="action-btns">
+        <button class="btn btn-sm btn-edit" onclick="editProp('${p.id}')">✏️ Editar</button>
+        <button class="btn btn-sm btn-danger" onclick="delProp('${p.id}')">🗑️ Eliminar</button>
+      </div></td></tr>`;
+  }).join('');
+}
+
+// ─── CRUD PACIENTES ───────────────────────────────────────────────────────
+function guardarPac() {
+  let nombre  = document.getElementById('pac-nombre').value.trim();
+  let especie = document.getElementById('pac-especie').value;
+  let propId  = document.getElementById('pac-prop').value;
+  if (!nombre || !especie || !propId) { alert('Nombre, especie y propietario son obligatorios.'); return; }
+  let prop = db.propietarios.find(p=>p.id===propId);
+  let eid = document.getElementById('pac-id').value;
+  let data = { nombre, especie, raza: document.getElementById('pac-raza').value, edad: document.getElementById('pac-edad').value, sexo: document.getElementById('pac-sexo').value, peso: document.getElementById('pac-peso').value, propNombre: prop?prop.nombre:'', propId, estado: document.getElementById('pac-estado').value, notas: document.getElementById('pac-notas').value };
+  if (eid) { let i = db.pacientes.findIndex(x=>x.id===eid); if(i>=0) db.pacientes[i]={...db.pacientes[i],...data}; }
+  else db.pacientes.push({ id: uid(), ...data });
+  closeModal('modal-pac'); renderPac(); renderDash();
+}
+function editPac(id) {
+  let p = db.pacientes.find(x=>x.id===id); if(!p) return;
+  fillSel('pac-prop', db.propietarios, 'Seleccionar propietario...');
+  document.getElementById('pac-id').value     = p.id;
+  document.getElementById('pac-nombre').value  = p.nombre;
+  document.getElementById('pac-especie').value = p.especie;
+  document.getElementById('pac-raza').value    = p.raza||'';
+  document.getElementById('pac-edad').value    = p.edad||'';
+  document.getElementById('pac-sexo').value    = p.sexo||'Macho';
+  document.getElementById('pac-peso').value    = p.peso||'';
+  document.getElementById('pac-prop').value    = p.propId||'';
+  document.getElementById('pac-estado').value  = p.estado||'Activo';
+  document.getElementById('pac-notas').value   = p.notas||'';
+  document.getElementById('tit-pac').textContent = 'Editar paciente';
+  document.getElementById('modal-pac').classList.add('open');
+}
+function delPac(id) { confirmDel(()=>{ db.pacientes = db.pacientes.filter(x=>x.id!==id); renderPac(); renderDash(); }); }
+function renderPac() {
+  let tbody = document.getElementById('body-pac');
+  if (!db.pacientes.length) { tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state">No hay pacientes registrados</div></td></tr>'; return; }
+  tbody.innerHTML = db.pacientes.map(p => {
+    let bc = p.estado==='Activo'?'badge-success':p.estado==='En tratamiento'?'badge-warning':'badge-info';
+    return `<tr data-nombre="${p.nombre}" data-especie="${p.especie}" data-raza="${p.raza||''}">
+      <td><strong>${p.nombre}</strong></td><td>${p.especie}</td><td>${p.raza||'—'}</td>
+      <td>${p.edad?p.edad+' años':'—'}</td><td>${p.propNombre||'—'}</td>
+      <td><span class="badge ${bc}">${p.estado}</span></td>
+      <td><div class="action-btns">
+        <button class="btn btn-sm btn-edit" onclick="editPac('${p.id}')">✏️ Editar</button>
+        <button class="btn btn-sm btn-danger" onclick="delPac('${p.id}')">🗑️ Eliminar</button>
+      </div></td></tr>`;
+  }).join('');
+}
+
+// ─── CRUD CITAS ───────────────────────────────────────────────────────────
+function guardarCit() {
+  let pacId  = document.getElementById('cit-pac').value;
+  let fecha  = document.getElementById('cit-fecha').value;
+  let hora   = document.getElementById('cit-hora').value;
+  let motivo = document.getElementById('cit-motivo').value.trim();
+  if (!pacId||!fecha||!hora||!motivo) { alert('Paciente, fecha, hora y motivo son obligatorios.'); return; }
+  let pac = db.pacientes.find(p=>p.id===pacId);
+  let eid = document.getElementById('cit-id').value;
+  let data = { paciente: pac?pac.nombre:'', pacId, fecha, hora, motivo, vet: document.getElementById('cit-vet').value, estado: document.getElementById('cit-estado').value, notas: document.getElementById('cit-notas').value };
+  if (eid) { let i = db.citas.findIndex(x=>x.id===eid); if(i>=0) db.citas[i]={...db.citas[i],...data}; }
+  else db.citas.push({ id: uid(), ...data });
+  closeModal('modal-cit'); renderCit(); renderDash();
+}
+function editCit(id) {
+  let c = db.citas.find(x=>x.id===id); if(!c) return;
+  fillSel('cit-pac', db.pacientes, 'Seleccionar paciente...');
+  document.getElementById('cit-id').value     = c.id;
+  document.getElementById('cit-pac').value    = c.pacId||'';
+  document.getElementById('cit-fecha').value  = c.fecha||'';
+  document.getElementById('cit-hora').value   = c.hora||'';
+  document.getElementById('cit-motivo').value = c.motivo||'';
+  document.getElementById('cit-vet').value    = c.vet||'';
+  document.getElementById('cit-estado').value = c.estado||'Pendiente';
+  document.getElementById('cit-notas').value  = c.notas||'';
+  document.getElementById('tit-cit').textContent = 'Editar cita';
+  document.getElementById('modal-cit').classList.add('open');
+}
+function delCit(id) { confirmDel(()=>{ db.citas = db.citas.filter(x=>x.id!==id); renderCit(); renderDash(); }); }
+function renderCit() {
+  let tbody = document.getElementById('body-cit');
+  if (!db.citas.length) { tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state">No hay citas registradas</div></td></tr>'; return; }
+  tbody.innerHTML = db.citas.map(c => {
+    let bc = c.estado==='Completada'?'badge-success':c.estado==='Cancelada'?'badge-danger':c.estado==='Confirmada'?'badge-info':'badge-warning';
+    let fd = c.fecha ? new Date(c.fecha+'T12:00').toLocaleDateString('es-CO',{day:'2-digit',month:'short',year:'numeric'}) : '—';
+    return `<tr data-paciente="${c.paciente}" data-motivo="${c.motivo}" data-vet="${c.vet||''}">
+      <td><strong>${c.paciente}</strong></td><td>${fd}</td><td>${c.hora||'—'}</td>
+      <td>${c.motivo}</td><td>${c.vet||'—'}</td>
+      <td><span class="badge ${bc}">${c.estado}</span></td>
+      <td><div class="action-btns">
+        <button class="btn btn-sm btn-edit" onclick="editCit('${c.id}')">✏️ Editar</button>
+        <button class="btn btn-sm btn-danger" onclick="delCit('${c.id}')">🗑️ Eliminar</button>
+      </div></td></tr>`;
+  }).join('');
+}
+
+// ─── CRUD HISTORIAL ───────────────────────────────────────────────────────
+function guardarHist() {
+  let pacId = document.getElementById('hist-pac').value;
+  let fecha = document.getElementById('hist-fecha').value;
+  let diag  = document.getElementById('hist-diag').value.trim();
+  if (!pacId||!fecha||!diag) { alert('Paciente, fecha y diagnóstico son obligatorios.'); return; }
+  let pac = db.pacientes.find(p=>p.id===pacId);
+  let eid = document.getElementById('hist-id').value;
+  let data = { paciente: pac?pac.nombre:'', pacId, fecha, diag, trat: document.getElementById('hist-trat').value, vet: document.getElementById('hist-vet').value, peso: document.getElementById('hist-peso').value, temp: document.getElementById('hist-temp').value, obs: document.getElementById('hist-obs').value };
+  if (eid) { let i = db.historial.findIndex(x=>x.id===eid); if(i>=0) db.historial[i]={...db.historial[i],...data}; }
+  else db.historial.push({ id: uid(), ...data });
+  closeModal('modal-hist'); renderHist();
+}
+function editHist(id) {
+  let h = db.historial.find(x=>x.id===id); if(!h) return;
+  fillSel('hist-pac', db.pacientes, 'Seleccionar paciente...');
+  document.getElementById('hist-id').value    = h.id;
+  document.getElementById('hist-pac').value   = h.pacId||'';
+  document.getElementById('hist-fecha').value = h.fecha||'';
+  document.getElementById('hist-diag').value  = h.diag||'';
+  document.getElementById('hist-trat').value  = h.trat||'';
+  document.getElementById('hist-vet').value   = h.vet||'';
+  document.getElementById('hist-peso').value  = h.peso||'';
+  document.getElementById('hist-temp').value  = h.temp||'';
+  document.getElementById('hist-obs').value   = h.obs||'';
+  document.getElementById('tit-hist').textContent = 'Editar registro clínico';
+  document.getElementById('modal-hist').classList.add('open');
+}
+function delHist(id) { confirmDel(()=>{ db.historial = db.historial.filter(x=>x.id!==id); renderHist(); }); }
+function renderHist() {
+  let tbody = document.getElementById('body-hist');
+  if (!db.historial.length) { tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state">No hay registros clínicos</div></td></tr>'; return; }
+  tbody.innerHTML = db.historial.map(h => {
+    let fd = h.fecha ? new Date(h.fecha+'T12:00').toLocaleDateString('es-CO',{day:'2-digit',month:'short',year:'numeric'}) : '—';
+    return `<tr data-paciente="${h.paciente}" data-diag="${h.diag}" data-trat="${h.trat||''}">
+      <td><strong>${h.paciente}</strong></td><td>${fd}</td>
+      <td>${h.diag}</td><td>${h.trat||'—'}</td><td>${h.vet||'—'}</td>
+      <td><div class="action-btns">
+        <button class="btn btn-sm btn-edit" onclick="editHist('${h.id}')">✏️ Editar</button>
+        <button class="btn btn-sm btn-danger" onclick="delHist('${h.id}')">🗑️ Eliminar</button>
+      </div></td></tr>`;
+  }).join('');
+}
+
+// ─── DASHBOARD ────────────────────────────────────────────────────────────
+function renderDash() {
+  document.getElementById('stat-pac').textContent  = db.pacientes.length;
+  document.getElementById('stat-prop').textContent = db.propietarios.length;
+  document.getElementById('stat-cit').textContent  = db.citas.length;
+  let hoy = new Date().toISOString().slice(0,10);
+  document.getElementById('stat-hoy').textContent = db.citas.filter(c=>c.fecha===hoy).length;
+  let list = document.getElementById('dash-citas-list');
+  if (!db.citas.length) { list.innerHTML = '<div class="empty-state">Sin citas registradas aún</div>'; }
+  else {
+    list.innerHTML = [...db.citas].reverse().slice(0,5).map(c => {
+      let bc = c.estado==='Completada'?'badge-success':c.estado==='Cancelada'?'badge-danger':c.estado==='Confirmada'?'badge-info':'badge-warning';
+      return `<div class="cita-row"><span>${c.paciente} — <em>${c.motivo}</em></span><span class="badge ${bc}">${c.estado}</span></div>`;
+    }).join('');
+  }
+  let especies = {};
+  db.pacientes.forEach(p => { especies[p.especie] = (especies[p.especie]||0)+1; });
+  let chart = document.getElementById('chart-especie');
+  let keys = Object.keys(especies);
+  if (!keys.length) { chart.innerHTML = '<div class="empty-state" style="width:100%">Sin datos aún</div>'; return; }
+  let max = Math.max(...Object.values(especies));
+  chart.innerHTML = keys.map(k => {
+    let h = Math.max(6, Math.round((especies[k]/max)*80));
+    return `<div class="bar-col"><div class="bar-val">${especies[k]}</div><div class="bar" style="height:${h}px" title="${k}: ${especies[k]}"></div><div class="bar-lbl">${k.slice(0,4)}</div></div>`;
+  }).join('');
+}
+
+// ─── BÚSQUEDA ─────────────────────────────────────────────────────────────
+function filtrar(q, tabId, campos) {
+  q = q.toLowerCase();
+  document.querySelectorAll('#' + tabId + ' tbody tr').forEach(row => {
+    let match = campos.some(c => (row.dataset[c]||'').toLowerCase().includes(q));
+    row.style.display = match ? '' : 'none';
+  });
+}
+
+// ─── CONFIRMACIÓN ELIMINAR ────────────────────────────────────────────────
+function confirmDel(fn) {
+  document.getElementById('modal-confirm').classList.add('open');
+  let btn = document.getElementById('btn-del-ok');
+  btn.onclick = () => { fn(); closeModal('modal-confirm'); };
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────
+renderDash(); renderPac(); renderProp(); renderCit(); renderHist();
+</script>
+</body>
+</html>
